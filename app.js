@@ -15,6 +15,7 @@ app.use(bodyParser.urlencoded({
   extended:true
 }));
 mongoose.connect("mongodb://127.0.0.1:27017/userDB", { useNewUrlParser: true });
+const db = mongoose.connection;
 console.log("Connected to MongoDB");
 
 
@@ -56,28 +57,28 @@ app.get("/secrets",function(req,res){
     res.render("secrets")
 
 })
-app.post("/register",function(req,res){
-
-    const newUser= User({
-        email:req.body.username,
-        password: req.body.password
-    })
-
-   newUser
-  .save()
-  .then((savedUser) => {
-    console.log('user existed' , savedUser);
-    // Redirect or respond as needed
-    res.redirect('secrets');
-  })
-  .catch((error) => {
-    console.error('Error saving post:', error);
-    // Handle the error, e.g., send an error response to the client
-    res.status(500).send('Error saving the post');
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+  bcrypt.hash(password, saltRounds, (err, hash) => {
+      if (err) {
+          console.error(err);
+          res.redirect("/register");
+      } else {
+          const newUser = new User({
+              email: username,
+              password: hash
+          });
+          newUser.save((err) => {
+              if (err) {
+                  console.error(err);
+                  res.redirect("/register");
+              } else {
+                  res.render("secrets");
+              }
+          });
+      }
   });
-})
- 
- 
+});
 app.listen(3000,function(req,res){
   console.log("Server started on port 3000.");
 })
